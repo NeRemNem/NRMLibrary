@@ -1,0 +1,36 @@
+run_id: rnd
+algo: ppo
+cuda: True
+max_step: 10000000
+batch_size: 64
+buffer_size: 512
+env:
+    env_name: MontezumaRevengeNoFrameskip-v4
+    #env_name: SpaceInvadersNoFrameskip-v4
+    #env_name: CartPole-v0
+    seed: 309
+    obs_stack: 4
+    num_process: 6
+    normalize: True
+model:
+    type: t2
+    params:
+        hidden_unit: 256
+        lambda: 0.95
+        lr: 0.0007
+        eps: 0.2
+        epoch: 4
+        c_entropy: 0.01
+        c_value: 0.5
+reward:
+    extrinsic:
+        strength : 2.0
+        gamma: 0.999
+    rnd:
+        strength: 1.0
+        gamma: 0.99
+        lr: 0.0001
+        hidden_unit: 512
+        epoch: 1
+log_interval: 10
+save_interval: 100

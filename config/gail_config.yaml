@@ -1,0 +1,35 @@
+run_id: gail
+algo: ppo
+cuda: True
+max_step: 10000000
+batch_size: 200
+buffer_size: 2000
+env:
+    env_name: MountainCar-v0
+    seed: 309
+    obs_stack: 32
+    num_process: 4
+    normalize: True
+model:
+    params:
+        hidden_unit: 128
+        gamma: 0.99
+        lambda: 0.95
+        lr: 0.0007
+        eps: 0.2
+        epoch: 3
+        c_entropy: 0.01
+        c_value: 0.5
+reward:
+    extrinsic:
+        strength : 0.0
+        gamma : 0.99
+    gail:
+        strength: 1.0
+        gamma: 0.95
+        lr: 0.001
+        demo_path: R:\RL\Demos\mountain_car_32.pickle
+        hidden_unit: 128
+        epoch: 5
+log_interval: 1
+save_interval: 100
