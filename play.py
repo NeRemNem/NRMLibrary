@@ -24,5 +24,5 @@ def play(save_data_path, config_path):
 
 
 if __name__ == "__main__":
-    play("R:\RL\SavedModel\mountain_car_16_done\mountain_car_16_done-990.pt"
-         , "R:\RL\SavedModel\mountain_car_16_done\\archive_mountain_car_16_done_config.yaml")
+    play("SavedModel\Sample\mountain_car_16_done.pt"
+         , "config\gail_config.yaml")
