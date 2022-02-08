@@ -88,6 +88,22 @@ def make_vec_envs(config):
     return envs
 
 
+def make_play_env(config):
+    env = [
+        make_env(config['env']['env_name'], 3, 0)
+    ]
+
+    env = DummyVecEnv(env)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    env = VecPyTorch(env, device)
+    if len(env.observation_space.shape) == 3:
+        env = VecPyTorchFrameStack(env, 4, device)
+    elif 'obs_stack' in config['env']:
+        env = VecPyTorchFrameStack(env, config['env']['obs_stack'], device)
+
+    return env
+
+
 class MontezumaInfoWrapper(gym.Wrapper):
     def __init__(self, env, room_address=3, max_step_per_episode=4500):
         super(MontezumaInfoWrapper, self).__init__(env)
@@ -175,7 +191,6 @@ class VecPyTorch(VecEnvWrapper):
         return obs, reward, done, info
 
 
-
 """
 [num_process,84,84,3]
 """
@@ -226,6 +241,7 @@ class VecPyTorchFrameStack(VecEnvWrapper):
     def __init__(self, vec_env, num_stack, device=None):
         self.venv = vec_env
         self.num_stack = num_stack
+        self.is_stacked = True
 
         wrapped_observation = vec_env.observation_space  # wrapped ob space
         self.shape_dim0 = wrapped_observation.shape[0]

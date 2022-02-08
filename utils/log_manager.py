@@ -12,7 +12,11 @@ class LogManager:
         self._reward_log = defaultdict(list)
         self._log_interval = config['log_interval']
 
-    def print_log(self, step):
+    def print_log(self, step, is_last=False):
+        if is_last:
+            self._print_reward_log(step)
+            self._print_loss_log()
+            return
         if self._check_print_log_time(step):
             self._print_reward_log(step)
             self._print_loss_log()
@@ -29,14 +33,14 @@ class LogManager:
             self._reward_log[k].append(v)
 
     def _print_reward_log(self, step):
-        print(f"{step} step elapsed\n"
-              f"\t\tepisode avg score : {np.mean(self._reward_log[RewardKey.EXTRINSIC]):.1f}\n"
-              f"\t\t\tmin / max score : {np.min(self._reward_log[RewardKey.EXTRINSIC]):.1f} / {np.max(self._reward_log[RewardKey.EXTRINSIC]):.1f}\n")
+        print(f"{step} step elapsed\n")
         for k, v in self._reward_log.items():
             if k == RewardKey.EXTRINSIC:
-                continue
-            print(f"\t\t{RewardKey(k).value} avg score : {np.mean(self._reward_log[RewardKey(k)]):.3f}\n"
-                  f"\t\t\tmin / max score : {np.min(self._reward_log[RewardKey(k)]):.3f} / {np.max(self._reward_log[RewardKey(k)]):.3f}\n")
+                print(f"\t\t{RewardKey(k).value} avg score : {np.mean(self._reward_log[RewardKey(k)]):.1f}\n"
+                      f"\t\t\tmin / max score : {np.min(self._reward_log[RewardKey(k)]):.1f} / {np.max(self._reward_log[RewardKey(k)]):.1f}\n")
+            else:
+                print(f"\t\t{RewardKey(k).value} avg score : {np.mean(self._reward_log[RewardKey(k)]):.3f}\n"
+                      f"\t\t\tmin / max score : {np.min(self._reward_log[RewardKey(k)]):.3f} / {np.max(self._reward_log[RewardKey(k)]):.3f}\n")
         self._reward_log.clear()
 
     def _print_loss_log(self):

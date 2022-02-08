@@ -12,11 +12,8 @@ from utils.enums import MemoryKey, RewardKey
 
 class Memory:
     def __init__(self, nrm):
-        if 'gail' in self._config['reward']:
-            self._demo_controller = DemoController(self._config)
         self._config = nrm.config
         self._device = self._config['device']
-        self._memory: Dict[MemoryKey, torch.Tensor] = self.__init_memory(nrm.env.observation_space.shape, self._config)
         self._batch_size = self._config['batch_size']
         self._buffer_size = self._config['buffer_size']
         self._num_process = self._config['env']['num_process']
@@ -24,6 +21,10 @@ class Memory:
         self._obs_filter = nrm.obs_filter
         self._made_return = False
         self._step = 0
+        if 'gail' in self._config['reward']:
+            self._demo_controller = DemoController(self._config, nrm.env)
+            origin_shape = nrm.env.shape_dim0
+        self._memory: Dict[MemoryKey, torch.Tensor] = self.__init_memory(nrm.env.observation_space.shape, self._config)
 
     def __init_memory(self, obs_shape, config):
         memory = defaultdict(torch.Tensor)
@@ -120,7 +121,7 @@ class Memory:
 
 
 class DemoController:
-    def __init__(self, config):
+    def __init__(self, config, env):
         self.pointer = 0
         with gzip.open(config['reward']['gail']['demo_path'], 'r') as f:
             raw_demo_data = pickle.load(f)
@@ -134,6 +135,7 @@ class DemoController:
         np.random.shuffle(self.indices)
         self.num_batches = len(self._demo_action) // self.batch_size
         self._demo_trajectory = torch.zeros(())
+        self._origin_shape = env.shape_dim0
 
     def prep_observation(self, obs_filter):
         prep_state = obs_filter(self._demo_state)

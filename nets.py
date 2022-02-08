@@ -256,27 +256,18 @@ class Critic(nn.Module):
 
 
 class Base(nn.Module):
-    def __init__(self, num_input, num_hidden_unit, do_init=True):
+    def __init__(self, num_input, num_hidden_unit):
         super(Base, self).__init__()
         self.input_layer = nn.Linear(num_input, num_hidden_unit)
-        if do_init:
-            init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                                   constant_(x, 0), np.sqrt(2))
+        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0), np.sqrt(2))
 
-            self.__layer = nn.Sequential(
-                init_(nn.Linear(num_input, num_hidden_unit))
-                , nn.Tanh()
-                , init_(nn.Linear(num_hidden_unit, num_hidden_unit))
-                , nn.Tanh()
-            )
-        else:
-            self.__layer = nn.Sequential(
-                nn.Linear(num_input, num_hidden_unit)
-                , nn.Tanh()
-                , nn.Linear(num_hidden_unit, num_hidden_unit)
-                , nn.Tanh()
-
-            )
+        self.__layer = nn.Sequential(
+            init_(nn.Linear(num_input, num_hidden_unit))
+            , nn.Tanh()
+            , init_(nn.Linear(num_hidden_unit, num_hidden_unit))
+            , nn.Tanh()
+        )
 
     def forward(self, obs):
         return self.__layer(obs)

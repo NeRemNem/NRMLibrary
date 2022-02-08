@@ -1,4 +1,4 @@
-run_id: mountain_car_16_done
+run_id: mountain_car_16_not_done
 algo: ppo
 cuda: True
 max_step: 1600000
@@ -25,7 +25,7 @@ reward:
         strength: 1.0
         gamma: 0.95
         lr: 0.001
-        demo_path: R:\RL\Demos\mountain_car_16_done.pickle
+        demo_path: R:\RL\Demos\mountain_car_16_not_done.pickle
         hidden_unit: 128
         epoch: 5
 log_interval: 10

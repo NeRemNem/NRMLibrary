@@ -15,9 +15,13 @@ lazy = [RewardKey.EXTRINSIC, RewardKey.GAIL]
 class RewardValueFactory:
     def __init__(self, intrinsic_models: Dict[RewardKey, IntrinsicModel], memory: Memory, config):
 
+        self._reward_normalizers: Dict[RewardKey, RewardNormalizer] = {}
+        self._rewards: Dict[RewardKey, torch.Tensor] = {}
+        self._values: Dict[RewardKey, torch.Tensor] = {}
+
         self._memory = memory
         self._on_rewards = []
-        self._strengths = {}
+        self._properties = {}
         self._reward_config = config['reward']
         self._r_step = 0
         self._v_step = 0
@@ -25,9 +29,6 @@ class RewardValueFactory:
         self._intrinsic_models = intrinsic_models
         self._device = config['device']
 
-        self._reward_normalizers: Dict[RewardKey, RewardNormalizer] = {}
-        self._rewards: Dict[RewardKey, torch.Tensor] = {}
-        self._values: Dict[RewardKey, torch.Tensor] = {}
         for key in self._reward_config.keys():
             reward_key = RewardKey(key)
             self._on_rewards.append(reward_key)
@@ -36,8 +37,9 @@ class RewardValueFactory:
                 self._device)
             self._values[reward_key] = torch.zeros((config['buffer_size'] + 1, config['env']['num_process'], 1)).to(
                 self._device)
-
-            self._strengths[reward_key] = self._reward_config[key]['strength']
+            self._properties[reward_key] = {}
+            self._properties[reward_key]['strength'] = self._reward_config[key]['strength']
+            self._properties[reward_key]['gamma'] = self._reward_config[key]['gamma']
             self._reward_normalizers[reward_key] = RewardNormalizer(self._reward_config[key]['gamma'])
 
     def push_extrinsic_reward(self, reward: torch.Tensor):
@@ -66,7 +68,7 @@ class RewardValueFactory:
             rewards = model.make_intrinsic_reward(inputs)
             rewards.to(self.device)
         prep_rewards = self._reward_normalizers[key](rewards)
-        self._rewards[key] = prep_rewards.to(self.device) * self._strengths[key]
+        self._rewards[key] = prep_rewards.to(self.device) * self._properties[key]['strength']
 
     @property
     def reward_config(self):
@@ -75,6 +77,10 @@ class RewardValueFactory:
     @property
     def device(self):
         return self._device
+
+    @property
+    def properties(self):
+        return self._properties
 
     @property
     def rewards(self):
@@ -87,7 +93,8 @@ class RewardValueFactory:
     def get_rewards_mean(self):
         rewards = {}
         for k, v in self._rewards.items():
-            rewards[k] = v.view(-1, 1).mean().cpu().item()
+            if k != RewardKey.EXTRINSIC:
+                rewards[k] = v.view(-1, 1).mean().cpu().item()
         return rewards
 
     @property

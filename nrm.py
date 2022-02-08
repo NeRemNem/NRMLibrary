@@ -3,10 +3,12 @@ from collections import defaultdict
 from collections import deque
 import torch
 import env_maker
+import yaml
 from algos import create_algorithm
 from models import create_agent, create_intrinsic_model
 from reward_value_factory import RewardValueFactory
 from storage import Memory
+from utils.enums import RewardKey
 from utils.log_manager import LogManager
 from utils.normalizer import ObsFilter
 
@@ -25,10 +27,8 @@ class NRM:
         self.obs_filter = ObsFilter()
         self.env = env_maker.make_vec_envs(config)
         self.memory = Memory(self)
-        # region model Setting
         self.agent = create_agent(self.env, config)
         self.intrinsic_models = create_intrinsic_model(self.env, config)
-        # endregion
 
         self.main_algo, self.intrinsic_algo = create_algorithm(config)
         self.reward_value_factory = RewardValueFactory(self.intrinsic_models, self.memory, config)
@@ -45,22 +45,22 @@ class NRM:
 
         if not os.path.isdir('SavedModel/' + config['run_id']):
             os.makedirs('SavedModel/' + config['run_id'])
+        with open(f"SavedModel/{config['run_id']}/archive_{config['run_id']}_config.yaml", 'w') as f:
+            yaml.dump(config, f)
 
     def run(self):
-
         total_step = self.config['max_step'] // self.config['env']['num_process'] // self.config['buffer_size']
-        obs = self._warm_up()
 
-        print("Start")
         # WORK FLOW
+        obs = self._warm_up()
+        print("Start")
         for step in range(total_step):
             self.step = step
             obs = self._sampling(obs)
             self._before_update()
             self._update()
             self._after_update()
-
-        print("DONE")
+        self._done()
 
     def _warm_up(self):
         obs = self.env.reset()
@@ -79,14 +79,14 @@ class NRM:
 
     def _sampling(self, obs):
         for i in range(self.config['buffer_size']):
-            # if self.step > 10:
+            # if self.step>20:
             #     self.env.render()
             action, values, log_prob = self.agent.act(obs)
             obs, reward, done, infos = self.env.step(action)
 
             for info in infos:
                 if 'episode' in info.keys():
-                    self.episode_rewards.append(info['episode']['r'])
+                    self.log_manager.add_reward({RewardKey.EXTRINSIC: info['episode']['r']})
 
             masks = torch.FloatTensor([[0.0] if done_ else [1.0] for done_ in done])
 
@@ -95,6 +95,7 @@ class NRM:
             self.reward_value_factory.push_extrinsic_reward(reward)
             self.reward_value_factory.push_values(values)
         self.reward_value_factory.push_values(self.agent.get_value(obs))
+
         return obs
 
     def _before_update(self):
@@ -130,9 +131,19 @@ class NRM:
     def _print_log(self):
         self.log_manager.print_log(self.step)
 
-    def _save_model(self):
+    def _done(self):
+        self._save_model(True)
+        print("DONE")
+
+    def _save_model(self, is_last=False):
         if self.step % self.config['save_interval'] == 0 and self.step > 0:
-            path = os.path.join("SavedModel", f"{self.config['run_id']}-{self.step}.pt")
+            path = os.path.join(f"SavedModel/{self.config['run_id']}", f"{self.config['run_id']}-{self.step}.pt")
+            torch.save({
+                'actor': self.agent
+                , 'obs_filt': self.obs_filter
+            }, path)
+        if is_last:
+            path = os.path.join(f"SavedModel/{self.config['run_id']}", f"{self.config['run_id']}-last.pt")
             torch.save({
                 'actor': self.agent
                 , 'obs_filt': self.obs_filter

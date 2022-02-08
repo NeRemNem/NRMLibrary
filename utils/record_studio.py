@@ -7,7 +7,7 @@ from gym.utils import play
 from utils.util import FrameStack
 
 env = gym.make('MountainCar-v0')
-stack = 32
+stack = 16
 env = FrameStack(env, stack)
 """
 states = [s0, s1, s2, s3 ...]
@@ -17,11 +17,12 @@ actions = [a0, a1, a2, a3 ...]
 
 
 class RecordStudio:
-    def __init__(self, env, path, key=None, count=3):
+    def __init__(self, env, path, key=None, goal=5):
         self.states = []
         self.actions = []
         self._is_record = False
-        self.count = count
+        self.count = 0
+        self.goal = goal
         self.env = env
         self.key = key
         self._path = path
@@ -31,7 +32,7 @@ class RecordStudio:
         self.actions.append(action)
         if done:
             self.count += 1
-        if self.count > 2 and done:
+        if self.count >= self.goal and done:
             if not self._is_record:
                 self._is_record = True
                 d = {'state': self.states, 'action': self.actions}
@@ -50,7 +51,7 @@ class RecordStudio:
         exit()
 
 
-path = f"{os.pardir}/Demos/mountain_car_32.pickle"
+path = f"{os.pardir}/Demos/mountain_car_16_not_done.pickle"
 k = {(ord('a'),): 0, (ord('d'),): 2, (): 1}
 studio = RecordStudio(env, path, k)
 studio.record()

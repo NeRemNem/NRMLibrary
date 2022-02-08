@@ -17,9 +17,9 @@ class ObsFilter:
             self._update(inputs)
 
         if _is_gpu:
-            return torch.clip(((inputs - self._obs_rms.mean) / np.sqrt(self._obs_rms.var[0] + 1e-11)), -5, 5).cuda()
+            return torch.clip(((inputs - self._obs_rms.mean) / np.sqrt(self._obs_rms.var[0] + 1e-11)), -5, 5).float().cuda()
         else:
-            return torch.clip(((inputs - self._obs_rms.mean) / np.sqrt(self._obs_rms.var[0] + 1e-11)), -5, 5)
+            return torch.clip(((inputs - self._obs_rms.mean) / np.sqrt(self._obs_rms.var[0] + 1e-11)), -5, 5).float()
 
     def _update(self, inputs):
         if not isinstance(inputs, np.ndarray):

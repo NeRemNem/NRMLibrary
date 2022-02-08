@@ -15,7 +15,7 @@ CRITIC = 1
 def make_returns_advantages(rewards: Dict[RewardKey, torch.Tensor], values: Dict[RewardKey, torch.Tensor],
                             mask: torch.Tensor,
                             device,
-                            gamma=0.99, lambda_=0.95, use_gae=True):
+                            properties, lambda_=0.95, use_gae=True):
     temp_advantage = []
     temp_returns = []
     for key in rewards.keys():
@@ -28,7 +28,7 @@ def make_returns_advantages(rewards: Dict[RewardKey, torch.Tensor], values: Dict
         if key != RewardKey.EXTRINSIC:
             mask = torch.ones((reward.size(0) + 1, 1)).to(device)
         gae = 0
-
+        gamma = properties[key]['gamma']
         for i in reversed(range(reward.size(0))):
             delta = reward[i] + gamma * value[i + 1] * mask[i + 1] - value[i]
             gae = delta + gamma * lambda_ * mask[i + 1] * gae
@@ -97,9 +97,8 @@ class GAIL(Algo):
         count = 0
         loss_epoch = 0
         for _ in range(self.epoch):
-            for batch in memory.get_batch(MemoryKey.STATE, MemoryKey.ACTION):
+            for batch in memory.get_batch(MemoryKey.STATE,MemoryKey.ACTION):
                 demo_trajectory = memory.get_demo_trajectory_batches()
-
                 agent_trajectory = torch.cat([batch[MemoryKey.STATE], batch[MemoryKey.ACTION]], dim=1)
 
                 demo_logit = discrim.make_intrinsic_logit(demo_trajectory.to(self.device))
@@ -169,7 +168,7 @@ class PPO(Algo):
         returns, advantages = make_returns_advantages(reward_factory.rewards, reward_factory.values,
                                                       memory.get(MemoryKey.MASK),
                                                       reward_factory.device
-                                                      , reward_factory.reward_config['extrinsic']['gamma'])
+                                                      , reward_factory.properties)
 
         value_loss_epoch = 0
         policy_loss_epoch = 0
